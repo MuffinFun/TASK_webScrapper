@@ -1,15 +1,16 @@
 const puppeteer = require('puppeteer');
 
+const puppeteerLaunchOptions = {
+  headless: 'new',
+  ignoreDefaultArgs: ['--no-sandbox'],
+};
+
 const getStock = async (url) => {
-  const browser = await puppeteer.launch({ headless: false });
+  const browser = await puppeteer.launch({ headless: 'new' });
   const page = await browser.newPage();
   await page.goto(url);
   await page.waitForNetworkIdle();
   await page.waitForSelector('ul.sizes-list');
-
-  const temp = await page.$$eval('li.sizes-list__item', (e) => e);
-
-  const stockLength = Array.from(temp, (_, ind) => ind);
 
   const stockValues = await page.evaluate(() => {
     const shortNames = Array.from(
@@ -23,18 +24,20 @@ const getStock = async (url) => {
 
     return { sizes, shortNames };
   });
-
   const stock = Object.fromEntries(
-    stockLength.reduce((acc, _, index) => {
-      const elem = [
-        stockValues.shortNames[index].toString(),
-        stockValues.sizes[index],
-      ];
-      acc = [...acc, elem];
-      return acc;
-    }, [])
+    Array.from(Array(stockValues.sizes.length).keys()).reduce(
+      (acc, _, index) => {
+        const elem = [
+          stockValues.shortNames[index].toString(),
+          stockValues.sizes[index],
+        ];
+
+        acc = [...acc, elem];
+        return acc;
+      },
+      []
+    )
   );
-  //console.log(stock);
 
   await browser.close();
 
